@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-
-import asyncio
-import serial_asyncio
-
+import serial
+import daemon
+import time
 import struct
 import argparse
 import json
@@ -29,7 +28,7 @@ mqtt = paho.Client("control3")  # create and connect mqtt client
 
 def disconnect():
     mqtt.disconnect()
-    print("broker disconnected")
+    print("Broker disconnected")
 
 
 def cellinfo1(data):  # process pack info
@@ -147,30 +146,7 @@ def cellvolts1(data):  # process cell voltages
     ret = mqtt.publish(gauge, payload=json.dumps(message1), qos=0, retain=False)
 
 
-class SerialProtocol(asyncio.Protocol):
-
-    def connection_made(self, transport):
-        self.transport = transport
-        print("Port opened.")
-        asyncio.ensure_future(self.query_device())
-
-    async def query_device(self):
-        try:
-            while True:
-                byte_data_cmd03 = bytes.fromhex('DDA50300FFFD77')
-                self.transport.serial.write(byte_data_cmd03)
-                await asyncio.sleep(5)
-                byte_data_cmd04 = bytes.fromhex('DDA50400FFFC77')
-                self.transport.serial.write(byte_data_cmd04)
-                await asyncio.sleep(5)
-                await asyncio.sleep(z)
-
-        except asyncio.CancelledError as e:
-            print(f'An error occurred: {e}')
-            print("Query loop interrupted.")
-            self.transport.close()
-
-    def data_received(self, data):
+def data_received(data):
         print("Income data:", data)
         hex_data = binascii.hexlify(data)  # Given raw bytes, get an ASCII string representing the hex values
         text_string = hex_data.decode('utf-8')  # check incoming data for routing to decoding routines
@@ -181,35 +157,44 @@ class SerialProtocol(asyncio.Protocol):
         elif text_string.find('77') != -1 and len(text_string) == 28 or len(text_string) == 36:  # x03
             cellinfo2(data)
 
-
-def connection_lost(self, exc):
-    if exc:
-        print("Error:", exc)
-    else:
-        print("Connection closed.")
-    asyncio.get_event_loop().stop()
-
-
-async def main():
-    loop = asyncio.get_running_loop()
-    atexit.register(disconnect)
-
-    mqtt.connect(broker, port)
-
-    transport, protocol = await serial_asyncio.create_serial_connection(
-        loop, SerialProtocol, comport, baudrate=9600
-    )
-
+def main():
     try:
-        await asyncio.Future()
-    except KeyboardInterrupt as e:
-        print(f'An error occurred: {e}')
-        # Ctrl+C to quit
-        print("User quit the program.")
-        transport.close()
+        atexit.register(disconnect)
+        mqtt.connect(broker, port)
+        byte_data_cmd03 = bytes.fromhex('DDA50300FFFD77')
+        byte_data_cmd04 = bytes.fromhex('DDA50400FFFC77')
+        
+        while True:
+                ser = serial.Serial(comport, 9600, timeout=10)
+        
+                if ser.is_open:
+                    print("Serial port opened.")
+                       
+                ser.write(byte_data_cmd03)                
+                response = ser.read(100)
+                if response:
+                    data_received(response)
+                time.sleep(5)               
+                
+                ser.write(byte_data_cmd04)                
+                response = ser.read(100)
+                if response:
+                    data_received(response)
+                time.sleep(5)
+                
+                if ser.is_open:
+                    ser.close()
+                time.sleep(z)
+                
+    except KeyboardInterrupt:      
+        print("Query loop interrupted.")
+    finally:
+        # Close ser. port
+        if ser.is_open:
+            ser.close()
+            print("Serial port closed.")
+        disconnect()
 
-try:
-    asyncio.run(main())
-except KeyboardInterrupt  as e:
-    print(f'An error occurred: {e}')
-    pass
+
+if __name__ == "__main__":
+    main()

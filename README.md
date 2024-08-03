@@ -1,5 +1,5 @@
 # JBD BMS and Thornwave bluetooth data monitoring
-** Serial udpate - comment 2024, by ZMi
+**Serial update - comment 2024, by ZMi**
 The Bluetooth version worked for me for 2 years, unfortunately after a while it became very unreliable, probably due to interference from the Wifi from the neighborhood. So I decided to change the communication to wired.
 
 You can find the original version at github.com/tgalarneau/bms
