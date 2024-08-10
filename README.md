@@ -1,8 +1,12 @@
-# JBD BMS and Thornwave bluetooth data monitoring
-**Serial update - comment 2024, by ZMi**
-The Bluetooth version worked for me for 2 years, unfortunately after a while it became very unreliable, probably due to interference from the Wifi from the neighborhood. So I decided to change the communication to wired.
+# Serial RS-485 update - comment 2024, by ZMi
+The Bluetooth version worked for me for 2 years, ~~unfortunately after a while it became very unreliable, probably due to interference from the Wifi from the neighborhood.~~ So I decided to change the communication to wired.
+**Actually, the problem was in the Delay setting, which was too short, so the BMS probably doesn't have time to handle the communication (2s vs 5s).**
 
 You can find the original version at github.com/tgalarneau/bms
+There are 2 versions-synchronous and asynchronous only for 8s and MQTT.
+For communication I used an RS-485 UART converter and a 5V<->3.3V logic level converter and of course 2 mini voltage converters (from Ali).
+
+# JBD BMS and Thornwave bluetooth data monitoring
 
 **JBD - Battery Management System**
 
